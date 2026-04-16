@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+  <title>Purchase Groups & Real Estate Transactions — Dvoranit Schwartz Law Office</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Frank+Ruhl+Libre:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Assistant', Arial, sans-serif;
+      background: linear-gradient(135deg, #f8faf9 0%, #e8f2ee 100%);
+      min-height: 100vh;
+      color: #1a1a1a;
+    }
+
+    .map-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.05);
+      padding: 40px;
+      position: relative;
+    }
+
+    .map-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #2d6e3e 0%, #d4b068 50%, #2d6e3e 100%);
+      border-radius: 16px 16px 0 0;
+    }
+
+    .map-header {
+      text-align: center;
+      margin-bottom: 35px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid #e8f2ee;
+    }
+
+    .map-title {
+      font-family: 'Assistant', Arial, sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    #map {
+      height: 600px;
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(45,110,62,0.1), 0 10px 10px -5px rgba(45,110,62,0.04);
+      border: 1px solid #e8f2ee;
+    }
+
+    .map-legend {
+      position: absolute;
+      top: 140px;
+      left: 25px;
+      background: white;
+      padding: 14px 18px;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+      z-index: 1000;
+      font-family: 'Assistant', Arial, sans-serif;
+      border: 1px solid #f0f0f0;
+      min-width: 195px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #4a4a4a;
+      font-weight: 500;
+    }
+
+    .legend-item:last-child { margin-bottom: 0; }
+
+    .legend-marker {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .legend-marker.black { background: #1a1a1a; }
+    .legend-marker.green { background: linear-gradient(135deg, #2d6e3e 0%, #1f4a2a 100%); }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px !important;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04) !important;
+      border: 1px solid #e8f2ee !important;
+    }
+
+    .leaflet-popup-content { margin: 0 !important; }
+
+    .leaflet-tooltip {
+      background: rgba(45,110,62,0.95) !important;
+      border: none !important;
+      border-radius: 8px !important;
+      color: white !important;
+      font-family: 'Assistant', Arial, sans-serif !important;
+      font-weight: 600 !important;
+      font-size: 13px !important;
+    }
+
+    .leaflet-tooltip-top:before { border-top-color: rgba(45,110,62,0.95) !important; }
+
+    .custom-marker-black,
+    .custom-marker-green {
+      border: 2px solid white;
+      border-radius: 50% 50% 50% 0;
+      width: 20px;
+      height: 20px;
+      transform: rotate(-45deg);
+      position: relative;
+    }
+
+    .custom-marker-black {
+      background: #1a1a1a;
+      box-shadow: 0 4px 6px -1px rgba(26,26,26,0.6);
+    }
+
+    .custom-marker-green {
+      background: linear-gradient(135deg, #2d6e3e 0%, #1f4a2a 100%);
+      box-shadow: 0 4px 6px -1px rgba(45,110,62,0.4);
+    }
+
+    .custom-marker-black:after,
+    .custom-marker-green:after {
+      content: '';
+      width: 4px;
+      height: 4px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 15px; }
+      .map-container { padding: 25px 20px; border-radius: 12px; }
+      .map-header { margin-bottom: 25px; padding-bottom: 20px; }
+      #map { height: 450px; }
+      .map-title { font-size: 24px; }
+      .map-legend { top: 15px; left: 10px; padding: 10px 14px; min-width: 155px; }
+      .legend-item { font-size: 12px; margin-bottom: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="map-container">
+    <div class="map-header">
+      <h1 class="map-title">Purchase Groups &amp; Real Estate Transactions</h1>
+    </div>
+
+    <div id="map">
+      <div class="map-legend">
+        <div class="legend-item">
+          <div class="legend-marker black"></div>
+          <span>Purchase group</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-marker green"></div>
+          <span>Real estate transactions</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    var map = L.map('map').fitBounds([[29.5, 34.2], [34.0, 35.8]]);
+    map.setMaxBounds([[29.5, 34.2], [34.0, 35.8]]);
+    map.setMinZoom(7);
+    map.setZoom(7);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+
+    var projects = [
+      // Purchase groups
+      { city: "Kiryat Shmona",  lat: 33.2103, lng: 35.5661, type: "purchase_group", info: "1 project, 18 apartments" },
+      { city: "Beit Shemesh",   lat: 31.7497, lng: 34.9846, type: "purchase_group", info: "1 project, 50 apartments" },
+      { city: "Modi'in Illit",  lat: 31.9302, lng: 35.0364, type: "purchase_group", info: "1 project, 150 apartments" },
+      { city: "Arad",           lat: 31.2589, lng: 35.2123, type: "purchase_group", info: "2 projects, 62 apartments" },
+      { city: "Mitzpe Ramon",   lat: 30.6093, lng: 34.801,  type: "purchase_group", info: "2 projects, 80 apartments" },
+      { city: "Ofakim",         lat: 31.3148, lng: 34.6204, type: "purchase_group", info: "1 project, 48 apartments" },
+      { city: "Efraim",         lat: 32.0195, lng: 35.0418, type: "purchase_group", info: "1 project, 159 apartments" },
+      { city: "Tzfat (Safed)",  lat: 32.9667, lng: 35.495,  type: "purchase_group", info: "3 projects, 34 apartments" },
+
+      // Real estate transactions
+      { city: "Neve Daniel",    lat: 31.6769, lng: 35.1436, type: "real_estate", info: "Real estate transactions" },
+      { city: "Givat Shmuel",   lat: 32.0777, lng: 34.8529, type: "real_estate", info: "Real estate transactions" },
+      { city: "Pardes Hanna",   lat: 32.4725, lng: 34.9756, type: "real_estate", info: "Real estate transactions" },
+      { city: "Leshem",         lat: 32.0675, lng: 35.0469, type: "real_estate", info: "Real estate transactions" },
+      { city: "Dolev",          lat: 31.9267, lng: 35.1331, type: "real_estate", info: "Real estate transactions" },
+      { city: "Efrat",          lat: 31.6625, lng: 35.1558, type: "real_estate", info: "Real estate transactions" },
+      { city: "Tekoa",          lat: 31.6522, lng: 35.2294, type: "real_estate", info: "Real estate transactions" },
+      { city: "Eli",            lat: 32.0728, lng: 35.2668, type: "real_estate", info: "Real estate transactions" },
+      { city: "Kiryat Gat",     lat: 31.6103, lng: 34.7642, type: "real_estate", info: "Real estate transactions" },
+      { city: "Netanya",        lat: 32.3215, lng: 34.8532, type: "real_estate", info: "Real estate transactions" },
+      { city: "Beit Shemesh",   lat: 31.7350, lng: 34.9950, type: "real_estate", info: "Real estate transactions" },
+      { city: "Jerusalem",      lat: 31.7683, lng: 35.2137, type: "real_estate", info: "Real estate transactions" },
+      { city: "Mitzpe Ramon",   lat: 30.6240, lng: 34.8110, type: "real_estate", info: "Real estate transactions" },
+      { city: "Tzur Hadassah",  lat: 31.7172, lng: 35.0956, type: "real_estate", info: "Real estate transactions" },
+      { city: "Binyamina",      lat: 32.5214, lng: 34.9500, type: "real_estate", info: "Real estate transactions" },
+      { city: "Gan Ner",        lat: 32.5319, lng: 35.3381, type: "real_estate", info: "Real estate transactions" },
+      { city: "Avnei Hefetz",   lat: 32.2856, lng: 35.0736, type: "real_estate", info: "Real estate transactions" },
+      { city: "Beitar Illit",   lat: 31.6964, lng: 35.1144, type: "real_estate", info: "Real estate transactions" }
+    ];
+
+    function createCustomIcon(type) {
+      var cls = type === "purchase_group" ? "custom-marker-black" : "custom-marker-green";
+      return L.divIcon({
+        className: 'custom-div-icon',
+        html: '<div class="' + cls + '"></div>',
+        iconSize: [20, 20],
+        iconAnchor: [10, 19]
+      });
+    }
+
+    projects.forEach(function(p) {
+      var isPG    = p.type === "purchase_group";
+      var bgColor = isPG ? "#1a1a1a" : "#2d6e3e";
+      var label   = isPG ? "Purchase group" : "Real estate transactions";
+
+      var popup = '<div style="font-family:\'Assistant\',Arial,sans-serif;padding:14px;min-width:230px;">'
+        + '<div style="font-size:17px;font-weight:700;color:' + bgColor + ';margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #d4b068;">' + p.city + '</div>'
+        + '<div style="background:' + bgColor + ';color:white;padding:6px 10px;border-radius:6px;margin-bottom:10px;text-align:center;font-weight:600;font-size:12px;">' + label + '</div>'
+        + '<div style="font-size:14px;color:#4a4a4a;line-height:1.5;margin-bottom:12px;">' + p.info + '</div>'
+        + '<div onclick="contactLawyer(\'' + p.city + '\')" style="background:' + bgColor + ';color:white;padding:8px 14px;border-radius:8px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 4px 6px -1px rgba(0,0,0,0.3);">'
+        + '&#9993; Email us for more information'
+        + '</div>'
+        + '</div>';
+
+      var marker = L.marker([p.lat, p.lng], { icon: createCustomIcon(p.type) }).addTo(map);
+
+      marker.bindPopup(popup, {
+        closeButton: false,
+        autoClose: false,
+        closeOnEscapeKey: true,
+        className: 'hover-popup',
+        offset: [0, -12]
+      });
+
+      marker.on('mouseover', function() { this.openPopup(); });
+      marker.on('mouseout', function() {
+        var self = this;
+        setTimeout(function() {
+          if (!document.querySelector('.leaflet-popup:hover')) { self.closePopup(); }
+        }, 200);
+      });
+      marker.on('click', function(e) {
+        e.originalEvent.stopPropagation();
+        this.openPopup();
+      });
+    });
+
+    function contactLawyer(city) {
+      var subject = encodeURIComponent('Inquiry — Dvoranit Schwartz Law Office');
+      window.location.href = 'mailto:office@dvoranitlaw.com?subject=' + subject;
+    }
+
+    map.on('popupopen', function(e) {
+      var el = e.popup._container;
+      if (el) {
+        el.addEventListener('mouseleave', function() {
+          setTimeout(function() { e.popup._source.closePopup(); }, 150);
+        });
+      }
+    });
+
+    map.on('click', function() { map.closePopup(); });
+
+    map.attributionControl.addAttribution('Dvoranit Schwartz Law Office');
+  </script>
+</body>
+</html>
